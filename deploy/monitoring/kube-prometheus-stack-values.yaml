@@ -1,0 +1,17 @@
+grafana:
+  enabled: true
+  admin:
+    existingSecret: grafana-admin
+  defaultDashboardsEnabled: true
+
+prometheus:
+  prometheusSpec:
+    serviceMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorSelector:
+      matchLabels:
+        release: prometheus
+    serviceMonitorNamespaceSelector: {}
+    retention: 7d
+
+alertmanager:
+  enabled: true

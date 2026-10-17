@@ -35,7 +35,11 @@ jobs:
         run: helm lint charts/podinfo
 
       - name: Render chart
-        run: helm template podinfo charts/podinfo > /tmp/podinfo-rendered.yaml
+        run: |
+          helm template podinfo charts/podinfo > /tmp/podinfo-rendered.yaml
+          helm template podinfo charts/podinfo -f deploy/monitoring/values-monitoring.yaml > /tmp/podinfo-monitoring.yaml
+          grep -q 'kind: ServiceMonitor' /tmp/podinfo-monitoring.yaml
+          python -m json.tool deploy/monitoring/dashboards/podinfo.json > /dev/null
 
   go:
     name: Test Go code
