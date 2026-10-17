@@ -1,0 +1,13 @@
+# Settings for deployment to Yandex Cloud Kubernetes.
+image:
+  repository: ghcr.io/maksimvgu/podinfo
+  pullPolicy: IfNotPresent
+
+service:
+  type: LoadBalancer
+
+serviceMonitor:
+  enabled: true
+  interval: 15s
+  additionalLabels:
+    release: prometheus
