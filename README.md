@@ -1,3 +1,26 @@
+# Podinfo — CI/CD и инфраструктура
+
+Этот fork расширяет приложение Podinfo CI/CD-пайплайном, инфраструктурой Yandex Cloud as Code и конфигурацией мониторинга.
+
+## Архитектура проекта
+
+- **GitHub Actions** — тесты Go, проверка Helm chart и сборка контейнера.
+- **GitHub Container Registry (GHCR)** — хранение Docker-образов.
+- **Terraform** — описание сети, Container Registry и Managed Kubernetes в Yandex Cloud.
+- **Terraform remote state** — хранение состояния в приватном бакете Yandex Object Storage.
+- **Helm** — установка приложения.
+- **Prometheus и Grafana** — мониторинг.
+- **Kustomize** — ConfigMap с Grafana dashboard.
+
+## Структура репозитория
+
+- `.github/workflows/project-ci.yml` — CI и сборка контейнера.
+- `charts/podinfo/` — Helm chart.
+- `infra/terraform/` — инфраструктура.
+- `deploy/monitoring/` — конфигурация мониторинга.
+
+---
+
 # podinfo
 
 [![e2e](https://github.com/stefanprodan/podinfo/workflows/e2e/badge.svg)](https://github.com/stefanprodan/podinfo/blob/master/.github/workflows/e2e.yml)
