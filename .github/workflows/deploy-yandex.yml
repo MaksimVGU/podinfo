@@ -57,6 +57,13 @@ jobs:
 
       - name: Configure Kubernetes access
         run: |
+          echo "=== Yandex Cloud CLI version ==="
+          yc version
+          echo "=== Cluster ID configured ==="
+          test -n "${{ secrets.YC_K8S_CLUSTER_ID }}" || {
+            echo "::error::YC_K8S_CLUSTER_ID secret is empty"
+            exit 1
+          }
           yc managed-kubernetes cluster get-credentials \
             --id "${{ secrets.YC_K8S_CLUSTER_ID }}" \
             --external \
