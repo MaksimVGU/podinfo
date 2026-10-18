@@ -55,19 +55,30 @@ jobs:
           yc config set cloud-id "${{ secrets.YC_CLOUD_ID }}"
           yc config set folder-id "${{ secrets.YC_FOLDER_ID }}"
 
-      - name: Configure Kubernetes access
+      - name: Diagnose Yandex Cloud access
+        env:
+          YC_TOKEN: ${{ steps.yc-token.outputs.token }}
         run: |
+          set -euo pipefail
           echo "=== Yandex Cloud CLI version ==="
           yc version
-          echo "=== Cluster ID configured ==="
-          test -n "${{ secrets.YC_K8S_CLUSTER_ID }}" || {
-            echo "::error::YC_K8S_CLUSTER_ID secret is empty"
-            exit 1
-          }
-          yc managed-kubernetes cluster get-credentials \
-            --id "${{ secrets.YC_K8S_CLUSTER_ID }}" \
-            --external \
-            --force
+          echo "=== Check configured cloud and folder ==="
+          yc config list
+          echo "=== Check cluster metadata ==="
+          yc managed-kubernetes cluster get "${{ secrets.YC_K8S_CLUSTER_ID }}" --format json > /tmp/cluster.json
+          python3 - <<'PYCLUSTER'
+          import json
+          with open("/tmp/cluster.json") as f:
+              c = json.load(f)
+          master = c.get("master", {})
+          endpoints = master.get("endpoints", {})
+          print("Cluster status:", c.get("status", "unknown"))
+          print("Cluster health:", c.get("health", "unknown"))
+          print("External endpoint present:", bool(endpoints.get("external_v4_endpoint")))
+          print("Internal endpoint present:", bool(endpoints.get("internal_v4_endpoint")))
+          PYCLUSTER
+          echo "=== Get Kubernetes credentials ==="
+          yc managed-kubernetes cluster get-credentials "${{ secrets.YC_K8S_CLUSTER_ID }}" --external --force
           kubectl cluster-info
 
       - name: Setup Helm
