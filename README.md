@@ -93,7 +93,7 @@ kubectl apply -k deploy/monitoring
     printf "Grafana username: "
     IFS= read -r GF_USER
     printf "Grafana password: "
-    IFS= read -r -s GF_PASS; printf "\\n"
+    IFS= read -r -s GF_PASS; printf '\n'
     printf "%s" "$GF_USER" > "$secret_dir/admin-user"
     printf "%s" "$GF_PASS" > "$secret_dir/admin-password"
     kubectl create secret generic grafana-admin -n monitoring --from-file=admin-user="$secret_dir/admin-user" --from-file=admin-password="$secret_dir/admin-password" --dry-run=client -o yaml | kubectl apply -f -
@@ -130,6 +130,22 @@ kubectl apply -k deploy/monitoring
 
 Не добавляй в Git пароли, токены, статические ключи, `backend.hcl` или Terraform state. Изменения сетевых правил необходимо проверять на соответствие требуемому доступу к Kubernetes API и сервисам. После изменений проверяй состояние workload, метрики и логи.
 
+## Локальная аутентификация Terraform
+
+Для первоначальной настройки Yandex Cloud CLI выполни `yc init`. Если профиль уже настроен, активируй его командой `yc config profile activate <profile-name>`. Затем получи IAM-токен и задай обязательные переменные Terraform:
+
+    export YC_TOKEN="$(yc iam create-token)"
+    export TF_VAR_cloud_id="$(yc config get cloud-id)"
+    export TF_VAR_folder_id="$(yc config get folder-id)"
+
+IAM-токен временный. Перед следующей сессией или после истечения срока его действия получи новый.
+
+Для доступа Terraform к Yandex Object Storage настрой `AWS_PROFILE` на профиль, в котором уже сохранены необходимые S3-совместимые учётные данные:
+
+    export AWS_PROFILE="<имя_профиля_с_доступом_к_Object_Storage>"
+
+Не вставляй секретные ключи непосредственно в команды, README или файлы, отслеживаемые Git.
+
 ## Первичное развёртывание инфраструктуры
 
 Перед инициализацией Terraform подготовь Yandex Cloud, необходимые переменные и аутентификацию провайдера. Bucket в Yandex Object Storage для Terraform state должен существовать заранее.
@@ -156,19 +172,3 @@ kubectl apply -k deploy/monitoring
     terraform apply
 
 После применения проверь состояние ресурсов и доступность созданной инфраструктуры. Для существующего окружения не переинициализируй backend и не переключай state без необходимости.
-
-### Локальная аутентификация Terraform
-
-Перед выполнением Terraform-команд выбери нужный профиль Yandex Cloud CLI и выполни аутентификацию. Затем установи переменные для провайдера и обязательных входных параметров:
-
-    export YC_TOKEN="$(yc iam create-token)"
-    export TF_VAR_cloud_id="$(yc config get cloud-id)"
-    export TF_VAR_folder_id="$(yc config get folder-id)"
-
-IAM-токен временный. Перед следующей сессией или после истечения срока его действия получи новый.
-
-Для доступа Terraform к Yandex Object Storage настрой `AWS_PROFILE` на профиль, в котором уже сохранены необходимые S3-совместимые учётные данные:
-
-    export AWS_PROFILE="<имя_профиля_с_доступом_к_Object_Storage>"
-
-Не вставляй секретные ключи непосредственно в команды, README или файлы, отслеживаемые Git.
