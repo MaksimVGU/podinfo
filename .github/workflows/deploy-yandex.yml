@@ -36,11 +36,37 @@ jobs:
               audience: payload.aud
             }, null, 2));
 
-      - name: Get Yandex Cloud IAM token using OIDC
+      - name: Get Yandex Cloud IAM token using GitHub OIDC
         id: yc-token
-        uses: docker://ghcr.io/yc-actions/yc-iam-token-fed:1.0.0
-        with:
-          yc-sa-id: ${{ secrets.YC_DEPLOY_SERVICE_ACCOUNT_ID }}
+        env:
+          YC_SA_ID: ${{ secrets.YC_DEPLOY_SERVICE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          OIDC_URL="${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=https%3A%2F%2Fgithub.com%2FMaksimVGU"
+
+          OIDC_TOKEN="$(
+            curl -fsS \
+              -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+              "$OIDC_URL" |
+            python3 -c 'import json,sys; print(json.load(sys.stdin)["value"])'
+          )"
+
+          YC_TOKEN="$(
+            curl -fsS -X POST \
+              https://auth.yandex.cloud/oauth/token \
+              -H "Content-Type: application/x-www-form-urlencoded" \
+              --data-urlencode "grant_type=urn:ietf:params:oauth:grant-type:token-exchange" \
+              --data-urlencode "requested_token_type=urn:ietf:params:oauth:token-type:access_token" \
+              --data-urlencode "audience=${YC_SA_ID}" \
+              --data-urlencode "subject_token=${OIDC_TOKEN}" \
+              --data-urlencode "subject_token_type=urn:ietf:params:oauth:token-type:id_token" |
+            python3 -c 'import json,sys; print(json.load(sys.stdin)["access_token"])'
+          )"
+
+          echo "::add-mask::$YC_TOKEN"
+          echo "token=$YC_TOKEN" >> "$GITHUB_OUTPUT"
 
       - name: Install Yandex Cloud CLI
         run: |
