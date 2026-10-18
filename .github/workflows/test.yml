@@ -42,6 +42,12 @@ jobs:
       - name: Validate Kustomize overlay
         run: |
           kubectl kustomize ./kustomize/ | flux-schema validate -s ecosystem --verbose
+      - name: Validate monitoring overlay
+        run: |
+          kubectl kustomize ./deploy/monitoring/ > /tmp/monitoring-rendered.yaml
+          grep -q 'kind: ServiceMonitor' /tmp/monitoring-rendered.yaml
+          grep -q 'name: loki-datasource' /tmp/monitoring-rendered.yaml
+          python -m json.tool deploy/monitoring/dashboards/podinfo.json > /dev/null
       - name: Verify CUE formatting
         working-directory: ./timoni/podinfo
         run: timoni fmt --diff

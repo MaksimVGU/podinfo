@@ -64,7 +64,6 @@ Prometheus собирает метрики, Grafana предоставляет �
 Применить конфигурацию мониторинга:
 
 ```bash
-kubectl apply -f deploy/monitoring/loki-datasource.yaml
 kubectl apply -k deploy/monitoring
 ```
 
