@@ -1,3 +1,4 @@
+{{- if .Values.service.grpcPort }}
 apiVersion: v1
 kind: Pod
 metadata:
@@ -17,3 +18,5 @@ spec:
       image: ghcr.io/grpc-ecosystem/grpc-health-probe:v0.4.56
       args:  ['-addr={{ template "podinfo.fullname" . }}.{{ include "podinfo.namespace" . }}:{{ .Values.service.grpcPort }}']
   restartPolicy: Never
+
+{{ end }}

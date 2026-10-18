@@ -5,6 +5,7 @@ image:
 
 service:
   type: LoadBalancer
+  grpcPort: 0
 
 serviceMonitor:
   enabled: true
