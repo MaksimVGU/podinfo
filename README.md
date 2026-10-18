@@ -120,7 +120,7 @@ kubectl apply -k deploy/monitoring
 
 Эти команды предназначены для первоначальной установки. На существующем кластере не меняй учётные данные Grafana без необходимости.
 
-Для доступа к Grafana выполни `kubectl port-forward -n monitoring svc/prometheus-grafana 3002:80` и открой `http://127.0.0.1:3002`. Учётные данные находятся в Kubernetes Secret `grafana-admin`.
+Для доступа к Grafana выполни `kubectl port-forward -n monitoring svc/prometheus-grafana 3003:80` и открой `http://127.0.0.1:3003`. Учётные данные находятся в Kubernetes Secret `grafana-admin`.
 
 Дашборд проекта: `deploy/monitoring/dashboards/podinfo.json`.
 
@@ -129,3 +129,46 @@ kubectl apply -k deploy/monitoring
 История Helm-релизов проверяется командой `helm history podinfo -n podinfo`. Откат выполняется командой `helm rollback podinfo <REVISION> -n podinfo --wait --timeout 5m`, где `<REVISION>` — номер проверенной рабочей ревизии.
 
 Не добавляй в Git пароли, токены, статические ключи, `backend.hcl` или Terraform state. Изменения сетевых правил необходимо проверять на соответствие требуемому доступу к Kubernetes API и сервисам. После изменений проверяй состояние workload, метрики и логи.
+
+## Первичное развёртывание инфраструктуры
+
+Перед инициализацией Terraform подготовь Yandex Cloud, необходимые переменные и аутентификацию провайдера. Bucket в Yandex Object Storage для Terraform state должен существовать заранее.
+
+Перейди в каталог инфраструктуры:
+
+    cd infra/terraform
+
+Создай локальный файл конфигурации backend по шаблону, если он ещё не существует:
+
+    test -f backend.hcl || cp backend.hcl.example backend.hcl
+
+Укажи в `backend.hcl` имя существующего bucket и остальные параметры подключения. Настрой профиль доступа к Object Storage через переменную `AWS_PROFILE`, а аутентификацию провайдера Yandex Cloud — согласно конфигурации Terraform. Локальные параметры и учётные данные не добавляй в Git.
+
+Инициализируй backend и проверь конфигурацию:
+
+    terraform init -backend-config=backend.hcl
+    terraform fmt -check
+    terraform validate
+    terraform plan
+
+Перед применением внимательно изучи план. Только после проверки изменений и подтверждения отсутствия неожиданных удалений или замен ресурсов выполняй:
+
+    terraform apply
+
+После применения проверь состояние ресурсов и доступность созданной инфраструктуры. Для существующего окружения не переинициализируй backend и не переключай state без необходимости.
+
+### Локальная аутентификация Terraform
+
+Перед выполнением Terraform-команд выбери нужный профиль Yandex Cloud CLI и выполни аутентификацию. Затем установи переменные для провайдера и обязательных входных параметров:
+
+    export YC_TOKEN="$(yc iam create-token)"
+    export TF_VAR_cloud_id="$(yc config get cloud-id)"
+    export TF_VAR_folder_id="$(yc config get folder-id)"
+
+IAM-токен временный. Перед следующей сессией или после истечения срока его действия получи новый.
+
+Для доступа Terraform к Yandex Object Storage настрой `AWS_PROFILE` на профиль, в котором уже сохранены необходимые S3-совместимые учётные данные:
+
+    export AWS_PROFILE="<имя_профиля_с_доступом_к_Object_Storage>"
+
+Не вставляй секретные ключи непосредственно в команды, README или файлы, отслеживаемые Git.
