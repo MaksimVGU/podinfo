@@ -1,7 +1,9 @@
 {
   "uid": "podinfo-overview",
   "title": "Podinfo Overview",
-  "tags": ["podinfo"],
+  "tags": [
+    "podinfo"
+  ],
   "schemaVersion": 39,
   "version": 1,
   "refresh": "30s",
@@ -26,10 +28,133 @@
         }
       ],
       "gridPos": {
-        "h": 9,
+        "h": 8,
         "w": 24,
         "x": 0,
         "y": 0
+      }
+    },
+    {
+      "id": 2,
+      "title": "Podinfo replicas: desired vs available",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "kube_deployment_spec_replicas{namespace=\"podinfo\",deployment=\"podinfo\"}",
+          "legendFormat": "Desired",
+          "range": true
+        },
+        {
+          "refId": "B",
+          "expr": "kube_deployment_status_replicas_available{namespace=\"podinfo\",deployment=\"podinfo\"}",
+          "legendFormat": "Available",
+          "range": true
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Container restarts in the last hour",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(kube_pod_container_status_restarts_total{namespace=\"podinfo\"}[1h]))",
+          "legendFormat": "Restarts",
+          "instant": true
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Podinfo application logs",
+      "type": "logs",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{namespace=\"podinfo\"}"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": false,
+        "enableLogDetails": true,
+        "sortOrder": "Descending",
+        "dedupStrategy": "none"
       }
     }
   ]
