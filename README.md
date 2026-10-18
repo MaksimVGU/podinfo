@@ -69,6 +69,57 @@ kubectl apply -k deploy/monitoring
 
 Деплой приложения через Helm не применяет эти ресурсы автоматически.
 
+### Установка мониторинга на новом кластере
+
+Перед установкой настрой `kubectl` на нужный кластер и проверь наличие StorageClass `yc-network-hdd`.
+
+Добавь Helm-репозитории:
+
+    helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+    helm repo add grafana-community https://grafana-community.github.io/helm-charts
+    helm repo add grafana https://grafana.github.io/helm-charts
+    helm repo update
+
+Создай namespaces:
+
+    kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
+    kubectl create namespace loki --dry-run=client -o yaml | kubectl apply -f -
+
+До установки Grafana создай Secret `grafana-admin`. Команды ниже запрашивают пароль без отображения на экране и не записывают его в Git.
+
+    set -o pipefail
+    umask 077
+    secret_dir="$(mktemp -d)"
+    printf "Grafana username: "
+    IFS= read -r GF_USER
+    printf "Grafana password: "
+    IFS= read -r -s GF_PASS; printf "\\n"
+    printf "%s" "$GF_USER" > "$secret_dir/admin-user"
+    printf "%s" "$GF_PASS" > "$secret_dir/admin-password"
+    kubectl create secret generic grafana-admin -n monitoring --from-file=admin-user="$secret_dir/admin-user" --from-file=admin-password="$secret_dir/admin-password" --dry-run=client -o yaml | kubectl apply -f -
+    result=$?
+    rm -rf "$secret_dir"
+    unset GF_USER GF_PASS
+    test "$result" -eq 0
+
+Установи Helm-релизы с версиями чартов, используемыми проектом:
+
+    helm upgrade --install prometheus prometheus-community/kube-prometheus-stack --version 92.10.1 -n monitoring -f deploy/monitoring/kube-prometheus-stack-small-values.yaml
+    helm upgrade --install loki grafana-community/loki --version 18.17.1 -n loki -f deploy/monitoring/loki-values.yaml
+    helm upgrade --install alloy grafana/alloy --version 1.13.1 -n monitoring -f deploy/monitoring/alloy-values.yaml
+
+Примени datasource Loki, дашборд и ServiceMonitor:
+
+    kubectl apply -k deploy/monitoring
+
+Проверь состояние компонентов:
+
+    kubectl get pods -n monitoring
+    kubectl get pods -n loki
+    kubectl get servicemonitor podinfo -n monitoring
+
+Эти команды предназначены для первоначальной установки. На существующем кластере не меняй учётные данные Grafana без необходимости.
+
 Для доступа к Grafana выполни `kubectl port-forward -n monitoring svc/prometheus-grafana 3002:80` и открой `http://127.0.0.1:3002`. Учётные данные находятся в Kubernetes Secret `grafana-admin`.
 
 Дашборд проекта: `deploy/monitoring/dashboards/podinfo.json`.
