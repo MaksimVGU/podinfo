@@ -125,6 +125,7 @@ jobs:
             --namespace podinfo \
             --create-namespace \
             --values charts/podinfo/values-yandex.yaml \
+            --set serviceMonitor.enabled=false \
             --set-string image.tag="$IMAGE_TAG" \
             --wait \
             --timeout 5m
