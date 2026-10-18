@@ -15,7 +15,7 @@ jobs:
   deploy:
     name: Deploy Podinfo with Helm
     if: github.ref == 'refs/heads/master' && github.repository == 'MaksimVGU/podinfo'
-    runs-on: ubuntu-latest
+    runs-on: podinfo-vpc
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -79,7 +79,7 @@ jobs:
           print("Internal endpoint present:", bool(endpoints.get("internal_v4_endpoint")))
           PYCLUSTER
           echo "=== Get Kubernetes credentials ==="
-          yc managed-kubernetes cluster get-credentials "${{ secrets.YC_K8S_CLUSTER_ID }}" --external --force
+          yc managed-kubernetes cluster get-credentials "${{ secrets.YC_K8S_CLUSTER_ID }}" --internal --force
           kubectl cluster-info
 
       - name: Setup Helm
