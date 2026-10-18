@@ -8,3 +8,13 @@ datasources:
   - name: Jaeger
     type: jaeger
     url: http://jaeger:16686
+    jsonData:
+      tracesToLogsV2:
+        datasourceUid: "P8E80F9AEF21F6940"
+        spanStartTimeShift: "1m"
+        spanEndTimeShift: "1m"
+        filterByTraceID: false
+        filterBySpanID: false
+        tags:
+          - key: "service.name"
+            value: "service_name"
